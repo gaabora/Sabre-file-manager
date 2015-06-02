@@ -22,7 +22,7 @@
 	// msg_class = info, success, danger or warning
 	// msg_text = text of the message
 	function showMsg($msg_class, $msg_text){
-		echo "<div class=\"alert alert-".$msg_class."\">";
+		echo "<div class=\"float-left alert alert-".$msg_class."\">";
 		echo "<p>".$msg_text."</p></div>\n";
 	}
 
