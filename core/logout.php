@@ -1,6 +1,6 @@
 <?php
 	// Sabre logout script
-	session_start();
+	if (!$_SESSION) session_start();
 
 	if(isSet($_GET['c']) and $_GET['c'] == "1"){
 		$_SESSION = array();
