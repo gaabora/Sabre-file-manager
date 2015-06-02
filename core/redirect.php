@@ -1,6 +1,6 @@
 <?php
 	// Sabre security file and config check
-	session_start();
+	if (!$_SESSION) session_start();
 
 	// Sabre installed?
 	if(file_exists("./config/settings.php")) {
