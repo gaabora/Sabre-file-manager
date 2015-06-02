@@ -1,6 +1,6 @@
 <?php
 	// Sabre login script
-	session_start();
+	if (!$_SESSION) session_start();
 
 	if( isSet($_POST['psw']) ){
 		include("../config/settings.php");
