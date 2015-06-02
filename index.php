@@ -1,10 +1,21 @@
 <?php 
 
+	setlocale(LC_ALL, 'ru_RU.utf8'); // ИНАЧЕ pathinfo ОТРЕЖЕТ ПЕРВОЕ СЛОВО
+	session_start();	
+	if (isset($_GET['CWD']) && $_GET['CWD']) {
+		$_SESSION['CWD'] = (preg_match("/(MSIE|Trident|govno)/", $_SERVER['HTTP_USER_AGENT']))
+			? str_replace("\\","/",iconv("cp1251", "utf-8", $_GET['CWD']))
+			: str_replace("\\","/",$_GET['CWD']);
+	} else {
+		$_SESSION['CWD'] = isset($_SESSION['CWD'])
+			? $_SESSION['CWD']
+			: '';
+	}	
+
 	/* *********************************************
-	 * Sabre File manager - Main file
-	 * Author: Mark Norton
-	 * Version: 2.0.1
-	 * https://github.com/mrknorton4007/sabre
+	 * based on Sabre File manager 2.0.1 - Main file by Mark Norton
+	 * original code at https://github.com/mrknorton4007/sabre
+	 * Version: 1.0
 	 * ********************************************* */
 
 	// Include function.php
@@ -19,21 +30,6 @@
 
 	// Print Sabre menu
 	echo "      <div id=\"menu\">\n";
-	echo "        <a href=\"./\" class=\"btn btn-blue\">Refresh list</a>\n";
-	if (constant(sb_user_upload)) {
-		echo "        <form id=\"drop\" method=\"post\" action=\"./core/upload.php\" enctype=\"multipart/form-data\">\n";
-		echo "        <a href=\"#\" class=\"btn btn-blue\">Upload file</a><input type=\"file\" name=\"upl\" multiple />\n";
-		echo "        </form>\n";
-	}
-	if (!constant(sb_public_file)) {
-		echo "        <a href=\"./core/logout.php?c=1\" class=\"btn btn-blue\">Logout</a>\n";
-	}
-	echo "      </div> <!-- /menu -->\n\n";
-
-
-	// Open container tag
-	echo "      <div class=\"container\">\n";
-
 	// Check for messages
 	if (isset($act_class, $act_text)) {
 		showMsg($act_class, $act_text);
@@ -43,31 +39,50 @@
 	if (!file_exists(sb_file_path)) {
 		showMsg('danger', 'Can\'t open <strong>'.sb_file_path.'</strong> folder. Check your Sabre settings!');
 	}
+	
+	if (constant(sb_user_upload)) {
+		echo "        <form id=\"drop\" method=\"post\" action=\"./core/upload.php\" enctype=\"multipart/form-data\">\n";
+		echo "        <label for=\"upl\">Выберите файл </label> <input type=\"file\" name=\"upl\" /> <input type=\"submit\" value=\"Загрузить\" />\n";
+		echo "        </form>\n";
+	}
+	if (!constant(sb_public_file)) {
+		echo "        <a href=\"./core/logout.php?c=1\" class=\"btn btn-blue\">Выйти</a>\n";
+	}
+	echo "      </div> <!-- /menu -->\n\n";
 
+
+	// Open container tag
+	echo "      <div class=\"container\">\n";
 	// Show file list
 	echo "        <table class=\"filesys\">\n";
-	echo "        <thead><tr><th class=\"file-index\">#</th><th class=\"file-name\">Name</th><th class=\"file-size\">File size</th><th class=\"file-date\">Upload date</th></tr></thead>\n";
+	echo "        <thead><tr><th class=\"file-index\">#</th><th class=\"file-name\">Имя <a href=\"./\" >[обновить список файлов]</a></th><th class=\"file-size\">Размер</th><th class=\"file-date\">Загружен</th></tr></thead>\n";
 	echo "        <tbody>\n";
-
+	
+	// $mod_rewrite = (function_exists('apache_get_modules'))
+		// ? in_array('mod_rewrite', apache_get_modules())
+		// : (getenv('HTTP_MOD_REWRITE')=='On' ? true : false);
+	
 	$filecount = 0;
-	foreach(glob("./".sb_file_path."/*") as $file){
+	$path = "./".sb_file_path.$_SESSION['CWD'];
+	if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') $path = iconv("utf-8", "cp1251", $path);
+	foreach(glob($path."/*") as $file){
 		if (!is_dir($file)) {
 			$filecount++;
 			$filename = basename($file);
-			$filelink = "./".sb_file_path."/".$filename;
+			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') $filename = iconv("cp1251", "utf-8", $filename);
+			$filelink = $path."/".$filename;
 			$date = date(sb_date_style, filemtime($file));
 			$filedim = makeSize($file);
 
 			echo "        <tr>";
 			echo "<td class=\"file-index\">".$filecount."</td>";
-			echo "<td class=\"file-name\"><p>".$filename."</p>";
-
-			echo "<span class=\"options\">";
-			echo "<a href=\"./?action=download&amp;file=".$filename."\">Download</a>";
-			if(constant(sb_user_delete)) {
-				echo " / <a href=\"./?action=delete&amp;file=".$filename."\">Delete</a>";	
-			}
-			echo "</span>";
+			// echo ($mod_rewrite)
+				// ? "<td class=\"file-name\"><p><a title=\"Скачать\" href=\"./download/".$filename."\">".$filename."</a>"
+				// : "<td class=\"file-name\"><p><a title=\"Скачать\" href=\"./?action=download&amp;file=".$filename."\">".$filename."</a>";
+			echo "<td class=\"file-name\"><p><a title=\"Скачать\" href=\"./?action=download&amp;file=".$filename."\">".$filename."</a>";
+			if(constant(sb_user_delete)) 
+				echo " <a class=\"float-right color-danger\" href=\"./?action=delete&amp;file=".$filename."\">Удалить</a>";	
+			echo "</p>";
 			echo "</td>";
 
 			echo "<td class=\"file-size\">".$filedim."</td>";
